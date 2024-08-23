@@ -14,3 +14,8 @@ type Snippet struct {
 	Created time.Time
 	Expires time.Time
 }
+
+type User struct{
+	Login string
+	Password string
+}

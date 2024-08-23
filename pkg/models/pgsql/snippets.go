@@ -3,19 +3,35 @@ package pgsql
 import (
 	"context"
 	"errors"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golangify.com/snippetbox/pkg/models"
+	"golang.org/x/crypto/bcrypt"
 )
+
+func hashPassword(password string) (string, error) {
+	hashPassword,err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(hashPassword),err
+}
+
+func checkHashPassword(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(password),[]byte(hash))
+	return err == nil
+}
+
 
 // SnippetModel - Определяем тип который обертывает пул подключения sql.DB
 type SnippetModel struct {
 	DB *pgxpool.Pool
 }
 
+func (m *SnippetModel) insertUser(email, password string)(int,error) {
+	hashPassword, err := hashPassword(password)
+	stmt := "INSERT INTO snippet (email, password) VALUES ($1,$2)"
+}
+
 // Insert - Метод для создания новой заметки в базе дынных.
-func (m *SnippetModel) Insert (title, content, expires string) (int,error){
+/*func (m *SnippetModel) Insert (title, content, expires string) (*models.User,error){
 	stmt := `INSERT INTO snippets (title, content, created, expires)
     VALUES ($1, $2, NOW(), NOW() + $3::interval) RETURNING id`
 
@@ -26,7 +42,7 @@ func (m *SnippetModel) Insert (title, content, expires string) (int,error){
 	}
 
 	return int(id), nil
-}
+}*/
 
 // Get - Метод для возвращения данных заметки по её идентификатору ID.
 func (m *SnippetModel) Get (id int) (*models.Snippet, error){
