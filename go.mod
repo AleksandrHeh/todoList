@@ -2,10 +2,7 @@ module golangify.com/snippetbox
 
 go 1.21.10
 
-require (
-	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/jackc/pgx/v5 v5.6.0
-)
+require github.com/jackc/pgx/v5 v5.6.0
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect

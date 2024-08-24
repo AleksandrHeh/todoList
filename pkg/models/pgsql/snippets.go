@@ -9,6 +9,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// SnippetModel - Определяем тип который обертывает пул подключения sql.DB
+type SnippetModel struct {
+	DB *pgxpool.Pool
+}
+
+
 func hashPassword(password string) (string, error) {
 	hashPassword,err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(hashPassword),err
@@ -19,16 +25,24 @@ func checkHashPassword(password, hash string) bool {
 	return err == nil
 }
 
+func (m *SnippetModel) InsertUser(email, password string) (int, error) {
+    hashedPassword, err := hashPassword(password)
+    if err != nil {
+        return 0, err
+    }
+    stmt := "INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id"
 
-// SnippetModel - Определяем тип который обертывает пул подключения sql.DB
-type SnippetModel struct {
-	DB *pgxpool.Pool
+    var id int
+    err = m.DB.QueryRow(context.Background(), stmt, email, hashedPassword).Scan(&id)
+    if err != nil {
+        return 0, err
+    }
+
+    return id, nil
 }
 
-func (m *SnippetModel) insertUser(email, password string)(int,error) {
-	hashPassword, err := hashPassword(password)
-	stmt := "INSERT INTO snippet (email, password) VALUES ($1,$2)"
-}
+
+
 
 // Insert - Метод для создания новой заметки в базе дынных.
 /*func (m *SnippetModel) Insert (title, content, expires string) (*models.User,error){

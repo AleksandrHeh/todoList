@@ -1,17 +1,54 @@
 package main
 
 import (
-	"errors"
+	"encoding/json"
+	_ "errors"
 	"fmt"
+	_ "fmt"
 	"net/http"
 	"strconv"
-	"golangify.com/snippetbox/pkg/models"	
+
+	_ "golangify.com/snippetbox/pkg/models"
 )
 
+type User struct {
+    Email    string `json:"email"`
+    Password string `json:"password"`
+}
 
 
+func (app *application) register(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+        return
+    }
 
-func (app *application) showSnippetTest(w http.ResponseWriter, r *http.Request) {
+    var user User
+    err := json.NewDecoder(r.Body).Decode(&user)
+    if err != nil {
+        http.Error(w, "Invalid input", http.StatusBadRequest)
+        fmt.Println("Error decoding request body:", err)
+        return
+    }
+
+    id, err := app.snippets.InsertUser(user.Email, user.Password)
+    if err != nil {
+        http.Error(w, "Unable to create user", http.StatusInternalServerError)
+        fmt.Println("Error inserting user:", err)
+        return
+    }
+
+    w.WriteHeader(http.StatusCreated)
+    w.Write([]byte(`{"id": ` + strconv.Itoa(id) + `}`))
+}
+
+
+func (app *application) login(w http.ResponseWriter, r *http.Request) {
+    
+}
+
+
+/*func (app *application) showSnippetTest(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 1 {
 		app.notFound(w) // Страница не найдена.
@@ -35,15 +72,7 @@ func (app *application) showSnippetTest(w http.ResponseWriter, r *http.Request) 
 	fmt.Fprintf(w, "%v", s)
 }
 
-func (app *application) login(w http.ResponseWriter, r *http.Request) {
-    
-}
 
-func (app *application) register(w http.ResponseWriter, r *http.Request) {
-
-}
-
-/*
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		app.notFound(w)
