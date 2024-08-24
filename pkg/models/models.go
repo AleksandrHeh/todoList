@@ -16,6 +16,10 @@ type Snippet struct {
 }
 
 type User struct{
-	Login string
+	UserID int
+	FirstName string
+	LastName string
+	MiddleName string
+	Email string
 	Password string
 }

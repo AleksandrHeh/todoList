@@ -6,12 +6,13 @@ import (
 	"fmt"
 	_ "fmt"
 	"net/http"
-	"strconv"
-
 	_ "golangify.com/snippetbox/pkg/models"
 )
 
 type User struct {
+	FirstName string `json:"firstname"`
+	LastName string `json:"lastname"`
+	MiddleName string `json:"middlename"`
     Email    string `json:"email"`
     Password string `json:"password"`
 }
@@ -31,15 +32,30 @@ func (app *application) register(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    id, err := app.snippets.InsertUser(user.Email, user.Password)
+	exists, err := app.snippets.EmailExists(user.Email)
+	if err != nil {
+		http.Error(w, "Server error: "+err.Error(), http.StatusInternalServerError)
+        return
+	}
+
+	if exists{
+		http.Error(w,"Email already in use", http.StatusConflict)
+		return
+	}
+
+    id, err := app.snippets.InsertUser(user.FirstName, user.LastName, user.MiddleName, user.Email, user.Password)
     if err != nil {
         http.Error(w, "Unable to create user", http.StatusInternalServerError)
         fmt.Println("Error inserting user:", err)
         return
     }
 
+	response := map[string]interface{}{
+        "id": id,
+    }
+    w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusCreated)
-    w.Write([]byte(`{"id": ` + strconv.Itoa(id) + `}`))
+    json.NewEncoder(w).Encode(response)
 }
 
 

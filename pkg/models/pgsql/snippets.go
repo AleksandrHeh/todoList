@@ -25,20 +25,31 @@ func checkHashPassword(password, hash string) bool {
 	return err == nil
 }
 
-func (m *SnippetModel) InsertUser(email, password string) (int, error) {
+func (m *SnippetModel) EmailExists(email string) (bool, error){
+	stmt := "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"
+	
+	var exists bool
+	err := m.DB.QueryRow(context.Background(), stmt, email).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+func (m *SnippetModel) InsertUser(firstname, lastname, middlename, email, password string) (int, error) {
     hashedPassword, err := hashPassword(password)
     if err != nil {
         return 0, err
     }
-    stmt := "INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id"
+    stmt := "INSERT INTO users (firstname, lastname, middlename, email, password) VALUES ($1, $2, $3, $4, $5) RETURNING userid"
 
-    var id int
-    err = m.DB.QueryRow(context.Background(), stmt, email, hashedPassword).Scan(&id)
+    var UserID int
+    err = m.DB.QueryRow(context.Background(), stmt, firstname, lastname, middlename, email, hashedPassword).Scan(&UserID)
     if err != nil {
         return 0, err
     }
 
-    return id, nil
+    return UserID, nil
 }
 
 
