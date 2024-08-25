@@ -1,9 +1,14 @@
 package main
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+)
 
 func enableCORS(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        log.Printf("Handling request: %s %s", r.Method, r.URL.Path)
+
         w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
         w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
         w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -17,13 +22,13 @@ func enableCORS(next http.Handler) http.Handler {
     })
 }
 
-func (app *application) routes() *http.ServeMux{
-	// Используем методы из структуры в качестве обработчиков маршрутов.
-	mux := http.NewServeMux()
 
-	
-	mux.Handle("/api/register", enableCORS(http.HandlerFunc(app.register)))
-	mux.HandleFunc("/api/login", app.login)
+func (app *application) routes() *http.ServeMux {
+    mux := http.NewServeMux()
 
-	return mux
-}	
+    // Регистрация обработчиков с использованием http.Handler
+    mux.Handle("/api/register", enableCORS(http.HandlerFunc(app.register)))
+    mux.Handle("/api/login", enableCORS(http.HandlerFunc(app.login)))
+
+    return mux
+}

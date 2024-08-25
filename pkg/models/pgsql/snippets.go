@@ -2,11 +2,15 @@ package pgsql
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"log"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"golangify.com/snippetbox/pkg/models"
 	"golang.org/x/crypto/bcrypt"
+	"golangify.com/snippetbox/pkg/models"
 )
 
 // SnippetModel - Определяем тип который обертывает пул подключения sql.DB
@@ -15,14 +19,23 @@ type SnippetModel struct {
 }
 
 
-func hashPassword(password string) (string, error) {
-	hashPassword,err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(hashPassword),err
+func HashPassword(password string) (string, error) {
+    hash := sha256.New()
+    _, err := hash.Write([]byte(password))
+    if err != nil {
+        return "", err
+    }
+    return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func checkHashPassword(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(password),[]byte(hash))
-	return err == nil
+func CheckHashPassword(password, hashedPassword string) bool {
+    log.Printf("Checking password: %s against hashed password: %s", password, hashedPassword)
+    err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+    if err != nil {
+        log.Printf("Password check failed: %v", err)
+        return false
+    }
+    return true
 }
 
 func (m *SnippetModel) EmailExists(email string) (bool, error){
@@ -36,8 +49,9 @@ func (m *SnippetModel) EmailExists(email string) (bool, error){
 	return exists, nil
 }
 
+
 func (m *SnippetModel) InsertUser(firstname, lastname, middlename, email, password string) (int, error) {
-    hashedPassword, err := hashPassword(password)
+    hashedPassword, err := HashPassword(password)
     if err != nil {
         return 0, err
     }
@@ -52,6 +66,18 @@ func (m *SnippetModel) InsertUser(firstname, lastname, middlename, email, passwo
     return UserID, nil
 }
 
+func (m *SnippetModel) GetUserAuthorization(email string) (*models.User, error) {
+	stmt := "SELECT email, password FROM users WHERE email = $1"
+	u := &models.User{}
+	err := m.DB.QueryRow(context.Background(), stmt, email).Scan(&u.Email, &u.Password)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+	return u, nil
+}
 
 
 

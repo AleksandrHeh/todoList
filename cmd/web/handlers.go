@@ -2,19 +2,24 @@ package main
 
 import (
 	"encoding/json"
-	_ "errors"
 	"fmt"
-	_ "fmt"
+	"log"
 	"net/http"
-	_ "golangify.com/snippetbox/pkg/models"
+	"golangify.com/snippetbox/pkg/models/pgsql"
 )
 
-type User struct {
-	FirstName string `json:"firstname"`
-	LastName string `json:"lastname"`
-	MiddleName string `json:"middlename"`
-    Email    string `json:"email"`
-    Password string `json:"password"`
+type user struct {
+	FirstName 	string `json:"firstname"`
+	LastName 	string `json:"lastname"`
+	MiddleName 	string `json:"middlename"`
+    Email    	string `json:"email"`
+    Password 	string `json:"password"`
+}
+
+type userAuth struct {
+
+    Email    	string `json:"email"`
+    Password 	string `json:"password"`
 }
 
 
@@ -24,7 +29,8 @@ func (app *application) register(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    var user User
+    var user user
+	//Декодируем запрос
     err := json.NewDecoder(r.Body).Decode(&user)
     if err != nil {
         http.Error(w, "Invalid input", http.StatusBadRequest)
@@ -60,8 +66,33 @@ func (app *application) register(w http.ResponseWriter, r *http.Request) {
 
 
 func (app *application) login(w http.ResponseWriter, r *http.Request) {
+    var user userAuth
+
+    err := json.NewDecoder(r.Body).Decode(&user)
+    if err != nil {
+        http.Error(w, "Invalid request payload", http.StatusBadRequest)
+        return
+    }
+
+    log.Printf("Received login request for email: %s", user.Email) // Логирование
     
+    exists, err := app.snippets.GetUserAuthorization(user.Email)
+    if err != nil {
+        log.Printf("Error retrieving user: %v", err) // Логирование
+        http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+        return
+    }
+
+	hash, err := pgsql.HashPassword(user.Password)
+    if hash != exists.Password{  
+        log.Printf("Password mismatch for email: %s", user.Email) // Логирование
+        http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+        return
+    }
+    
+    w.WriteHeader(http.StatusOK)
 }
+
 
 
 /*func (app *application) showSnippetTest(w http.ResponseWriter, r *http.Request) {
