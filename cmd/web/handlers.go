@@ -84,6 +84,12 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
     }
 
 	hash, err := pgsql.HashPassword(user.Password)
+	if err != nil {
+		// Логируем ошибку для диагностики
+		log.Printf("Error hashing password: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
     if hash != exists.Password{  
         log.Printf("Password mismatch for email: %s", user.Email) // Логирование
         http.Error(w, "Invalid email or password", http.StatusUnauthorized)
