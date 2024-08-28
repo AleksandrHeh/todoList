@@ -29,6 +29,7 @@ func (app *application) routes() *http.ServeMux {
     // Регистрация обработчиков с использованием http.Handler
     mux.Handle("/api/register", enableCORS(http.HandlerFunc(app.register)))
     mux.Handle("/api/login", enableCORS(http.HandlerFunc(app.login)))
+    mux.Handle("/api/boards/createProject", enableCORS(http.HandlerFunc(app.createProject)))
 
     return mux
 }

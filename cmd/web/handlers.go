@@ -19,10 +19,20 @@ type user struct {
     Password 	string `json:"password"`
 }
 
+type project struct{
+    ProjectName string `json:"projectname`
+    Description string `json:"description"`
+    Password    string `json:"password"`
+}
+
 // Структура для хранения заявлений JWT
 type Claims struct {
 	Email string `json:"email"`
 	jwt.RegisteredClaims
+}
+
+func (app *application) createProject(w http.ResponseWriter, r *http.Request){
+    
 }
 
 var jwtKey = []byte("your_super_secret_key_which_is_long_and_random_enough")
