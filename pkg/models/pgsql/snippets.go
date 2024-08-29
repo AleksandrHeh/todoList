@@ -38,6 +38,16 @@ func CheckHashPassword(password, hashedPassword string) bool {
     return true
 }
 
+func (m *SnippetModel) GetUserByEmail(email string) (int, error) {
+	stmt := "SELECT userid FROM users WHERE email = $1"
+	var UserID int
+	err := m.DB.QueryRow(context.Background(), stmt, email).Scan(&UserID)
+	if err != nil {
+		return 0, err
+	}
+	return UserID, nil
+}
+
 func (m *SnippetModel) EmailExists(email string) (bool, error){
 	stmt := "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"
 	
@@ -48,7 +58,6 @@ func (m *SnippetModel) EmailExists(email string) (bool, error){
 	}
 	return exists, nil
 }
-
 
 func (m *SnippetModel) InsertUser(firstname, lastname, middlename, email, password string) (int, error) {
     hashedPassword, err := HashPassword(password)
@@ -79,6 +88,22 @@ func (m *SnippetModel) GetUserAuthorization(email string) (*models.User, error) 
 	return u, nil
 }
 
+func (m *SnippetModel) InserProject(projectname, description, password string, createdby int) ( int, error){
+	hashPassword, err := HashPassword(password)
+	if err != nil {
+		return 0, err
+	}
+	
+
+	stmt := "INSERT INTO projects (projectname, description, password, createdby) VALUES ($1, $2, $3, $4) RETURNING projectid"
+	var projectID int
+	err = m.DB.QueryRow(context.Background(),stmt, projectname, description, hashPassword, createdby).Scan(&projectID)
+	if err != nil {
+        return 0, err
+    }
+
+    return projectID ,nil
+}
 
 
 // Insert - Метод для создания новой заметки в базе дынных.
@@ -93,7 +118,7 @@ func (m *SnippetModel) GetUserAuthorization(email string) (*models.User, error) 
 	}
 
 	return int(id), nil
-}*/
+}
 
 // Get - Метод для возвращения данных заметки по её идентификатору ID.
 func (m *SnippetModel) Get (id int) (*models.Snippet, error){
@@ -173,4 +198,4 @@ func (m *SnippetModel) Latest() ([]*models.Snippet, error) {
 		return nil, err
 	}
 	return snippets, nil
-}
+}*/

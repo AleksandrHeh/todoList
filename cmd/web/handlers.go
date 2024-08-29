@@ -20,10 +20,12 @@ type user struct {
 }
 
 type project struct{
-    ProjectName string `json:"projectname`
-    Description string `json:"description"`
-    Password    string `json:"password"`
+    ProjectName   string `json:"projectname"`
+    Description   string `json:"description"`
+    Password      string `json:"password"`
+    Email string `json:"email"` // Должно совпадать с ключом в JSON
 }
+
 
 // Структура для хранения заявлений JWT
 type Claims struct {
@@ -32,7 +34,44 @@ type Claims struct {
 }
 
 func (app *application) createProject(w http.ResponseWriter, r *http.Request){
+    if r.Method != http.MethodPost{
+        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+        return
+    }
+
+    var p project
+
+    err := json.NewDecoder(r.Body).Decode(&p)
+    if err != nil {
+        http.Error(w, "Invalid request payload", http.StatusBadRequest)
+        return
+    }
+
+    log.Printf("Данные проекта: %+v", p)
     
+    //Получаем id пользователя по email
+    userID,err := app.snippets.GetUserByEmail(p.Email)
+    if err != nil {
+        log.Printf("Error retrieving user ID: %v", err)
+    http.Error(w, "Error retrieving user ID", http.StatusInternalServerError)
+    return
+    }
+
+    projectID, err := app.snippets.InserProject(p.ProjectName, p.Description, p.Password, userID) 
+    if err != nil {
+        if err != nil {
+            log.Printf("Error creating project: %v", err)
+            http.Error(w, "Error creating project", http.StatusInternalServerError)
+            return
+        }
+    }
+
+    response := map[string]interface{}{
+        "success": true,
+        "projectID": projectID,
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }
 
 var jwtKey = []byte("your_super_secret_key_which_is_long_and_random_enough")
