@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"golangify.com/snippetbox/pkg/models"
 	"golangify.com/snippetbox/pkg/models/pgsql"
 )
 
@@ -33,6 +34,42 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+func (app *application) userCreatedProjects(w http.ResponseWriter, r *http.Request) {
+    var p project
+    err := json.NewDecoder(r.Body).Decode(&p)
+    if err != nil {
+        http.Error(w,"Invalid request payload", http.StatusBadRequest)
+        return
+    }
+
+    log.Printf("Данные проекта: %+v", p)
+
+    
+
+    projects, err := app.snippets.GetDisplayUserCreatedProjects(p.Email)
+    if err != nil {
+        http.Error(w, "Error retrieving projects", http.StatusInternalServerError)
+		return
+    }
+
+    log.Print("Данные проекта: 1")
+
+    response := struct {
+		Success  bool              `json:"success"`
+		Projects []*models.Project `json:"projects"`
+	}{
+		Success:  true,
+		Projects: projects,
+	}
+    log.Print("Данные проекта: 2")
+    w.Header().Set("Content-Type", "application/json")
+    log.Print("Данные проекта: 3")
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+	}
+}
+
 func (app *application) createProject(w http.ResponseWriter, r *http.Request){
     if r.Method != http.MethodPost{
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -53,8 +90,8 @@ func (app *application) createProject(w http.ResponseWriter, r *http.Request){
     userID,err := app.snippets.GetUserByEmail(p.Email)
     if err != nil {
         log.Printf("Error retrieving user ID: %v", err)
-    http.Error(w, "Error retrieving user ID", http.StatusInternalServerError)
-    return
+        http.Error(w, "Error retrieving user ID", http.StatusInternalServerError)
+        return
     }
 
     projectID, err := app.snippets.InserProject(p.ProjectName, p.Description, p.Password, userID) 

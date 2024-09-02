@@ -32,6 +32,7 @@ func (app *application) routes() *http.ServeMux {
     mux.Handle("/api/register", enableCORS(http.HandlerFunc(app.register)))
     mux.Handle("/api/login", enableCORS(http.HandlerFunc(app.login)))
     mux.Handle("/api/board/createProject", enableCORS(http.HandlerFunc(app.createProject)))
+    mux.Handle("/api/board/userCreatedProjects", enableCORS(http.HandlerFunc(app.userCreatedProjects)))
 
     return mux
 }

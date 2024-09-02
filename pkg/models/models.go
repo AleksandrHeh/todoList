@@ -22,3 +22,4 @@ type Project struct{
 	Password string
 	CreatedBy int //id users кто создал проект
 }
+

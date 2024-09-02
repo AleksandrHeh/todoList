@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"log"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
@@ -57,6 +56,41 @@ func (m *SnippetModel) EmailExists(email string) (bool, error){
 		return false, err
 	}
 	return exists, nil
+}
+
+//вывод для страницы Мои созданные проекты
+func (m *SnippetModel) GetDisplayUserCreatedProjects(email string) ([]*models.Project, error) {
+	userID, err := m.GetUserByEmail(email)
+	if err != nil {
+		log.Printf("Error retrieving user ID: %v", err)
+        return nil, err
+	}
+	log.Print(userID)
+	stmt := "SELECT * FROM projects WHERE createdby = $1"
+	rows,err := m.DB.Query(context.Background(), stmt, userID)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	var projects []*models.Project
+	for rows.Next() {
+		var p models.Project
+		err := rows.Scan(&p.ProjectID, &p.ProjectName, &p.ProjectDescription, &p.Password, &p.CreatedBy)
+		if err != nil {
+			log.Printf("Error scanning project row: %v", err)
+			return nil, err
+		}
+		projects = append(projects, &p)
+	}
+
+	// Проверка на наличие ошибок после завершения обработки всех строк
+	if err = rows.Err(); err != nil {
+		log.Printf("Error after iterating through rows: %v", err)
+		return nil, err
+	}
+
+	return projects, nil
 }
 
 func (m *SnippetModel) InsertUser(firstname, lastname, middlename, email, password string) (int, error) {
