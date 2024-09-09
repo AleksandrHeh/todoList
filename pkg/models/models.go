@@ -18,7 +18,7 @@ type User struct{
 type Project struct{
 	ProjectID int
 	ProjectName string
-	ProjectDescription string
+	Description string
 	Password string
 	CreatedBy int //id users кто создал проект
 }

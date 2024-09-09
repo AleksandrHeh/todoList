@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -34,17 +36,48 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+
+func (app *application) updateProject(w http.ResponseWriter, r *http.Request) {
+    idStr := strings.TrimPrefix(r.URL.Path, "/api/board/updateProject/")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        log.Printf("Invalid ID: %s", idStr)
+        http.Error(w, "Invalid project ID", http.StatusBadRequest)
+        return
+    }
+    log.Printf("Updating project with ID: %d", id)
+
+    var p project
+    err = json.NewDecoder(r.Body).Decode(&p)
+    if err != nil {
+        log.Printf("Error decoding request body: %v", err)
+        http.Error(w, "Invalid request payload", http.StatusBadRequest)
+        return
+    }
+
+    err = app.snippets.UpdateProject(p.ProjectName, p.Description, id)
+    if err != nil {
+        log.Printf("Error updating project: %v", err)
+        http.Error(w, err.Error(), http.StatusMethodNotAllowed)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "Project updated successfully",
+    })
+    
+}
+
+
 func (app *application) userCreatedProjects(w http.ResponseWriter, r *http.Request) {
     var p project
     err := json.NewDecoder(r.Body).Decode(&p)
     if err != nil {
         http.Error(w,"Invalid request payload", http.StatusBadRequest)
         return
-    }
-
-    log.Printf("Данные проекта: %+v", p)
-
-    
+    }    
 
     projects, err := app.snippets.GetDisplayUserCreatedProjects(p.Email)
     if err != nil {
@@ -61,9 +94,7 @@ func (app *application) userCreatedProjects(w http.ResponseWriter, r *http.Reque
 		Success:  true,
 		Projects: projects,
 	}
-    log.Print("Данные проекта: 2")
     w.Header().Set("Content-Type", "application/json")
-    log.Print("Данные проекта: 3")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		http.Error(w, "Error encoding response", http.StatusInternalServerError)

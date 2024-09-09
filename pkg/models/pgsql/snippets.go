@@ -5,7 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
@@ -16,7 +18,6 @@ import (
 type SnippetModel struct {
 	DB *pgxpool.Pool
 }
-
 
 func HashPassword(password string) (string, error) {
     hash := sha256.New()
@@ -58,6 +59,25 @@ func (m *SnippetModel) EmailExists(email string) (bool, error){
 	return exists, nil
 }
 
+//обновление данных в проекте
+func (m *SnippetModel) UpdateProject(projectname, description string, projectId int) error{
+	stmt := "UPDATE projects SET projectname = $1, description = $2 WHERE projectid = $3"
+	_, err := m.DB.Exec(context.Background(), stmt, projectname, description, projectId)
+	if err != nil {
+		return fmt.Errorf("error updating project: %v", err)
+	}
+	return nil
+}
+
+func (m *SnippetModel) DeleteProject(projectID int) error{
+	stmt := "DELETE FROM project WHERE projectid = $1"
+	_, err := m.DB.Exec(context.Background(), stmt, projectID)
+	if err != nil{
+		return fmt.Errorf("Не сущевствует такой задачи под ID: %v", projectID)
+	}
+	return nil
+}
+
 //вывод для страницы Мои созданные проекты
 func (m *SnippetModel) GetDisplayUserCreatedProjects(email string) ([]*models.Project, error) {
 	userID, err := m.GetUserByEmail(email)
@@ -76,7 +96,7 @@ func (m *SnippetModel) GetDisplayUserCreatedProjects(email string) ([]*models.Pr
 	var projects []*models.Project
 	for rows.Next() {
 		var p models.Project
-		err := rows.Scan(&p.ProjectID, &p.ProjectName, &p.ProjectDescription, &p.Password, &p.CreatedBy)
+		err := rows.Scan(&p.ProjectID, &p.ProjectName, &p.Description, &p.Password, &p.CreatedBy)
 		if err != nil {
 			log.Printf("Error scanning project row: %v", err)
 			return nil, err
@@ -92,6 +112,7 @@ func (m *SnippetModel) GetDisplayUserCreatedProjects(email string) ([]*models.Pr
 
 	return projects, nil
 }
+
 
 func (m *SnippetModel) InsertUser(firstname, lastname, middlename, email, password string) (int, error) {
     hashedPassword, err := HashPassword(password)
