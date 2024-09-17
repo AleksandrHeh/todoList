@@ -26,15 +26,35 @@ type project struct{
     ProjectName   string `json:"projectname"`
     Description   string `json:"description"`
     Password      string `json:"password"`
-    Email string `json:"email"` // Должно совпадать с ключом в JSON
+    Email string `json:"email"` 
 }
 
-
-// Структура для хранения заявлений JWT
 type Claims struct {
 	Email string `json:"email"`
 	jwt.RegisteredClaims
 }
+
+func (app *application) deleteProject(w http.ResponseWriter, r *http.Request) {
+    idStr := strings.TrimPrefix(r.URL.Path, "/api/board/deleteProject/")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        log.Printf("Invalid ID: %s", idStr)
+        http.Error(w, "Invalid project ID", http.StatusBadRequest)
+        return
+    }
+    log.Printf("Attempting to delete project with ID: %d", id) 
+
+    err = app.snippets.DeleteProject(id)
+    if err != nil {
+        log.Printf("Error deleting project with ID %d: %v", id, err)
+        http.Error(w, err.Error(), http.StatusInternalServerError) 
+        return
+    }
+
+    log.Printf("Project with ID %d successfully deleted", id) 
+    w.WriteHeader(http.StatusNoContent) 
+}
+
 
 
 func (app *application) updateProject(w http.ResponseWriter, r *http.Request) {

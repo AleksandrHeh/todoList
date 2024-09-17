@@ -70,10 +70,10 @@ func (m *SnippetModel) UpdateProject(projectname, description string, projectId 
 }
 
 func (m *SnippetModel) DeleteProject(projectID int) error{
-	stmt := "DELETE FROM project WHERE projectid = $1"
+	stmt := "DELETE FROM projects WHERE projectid = $1"
 	_, err := m.DB.Exec(context.Background(), stmt, projectID)
 	if err != nil{
-		return fmt.Errorf("Не сущевствует такой задачи под ID: %v", projectID)
+		return fmt.Errorf("Не сущевствует такой задачи под ID: %v", projectID,)
 	}
 	return nil
 }
